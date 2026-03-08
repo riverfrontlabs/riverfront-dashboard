@@ -89,7 +89,7 @@ export default function LeadDetail({ lead, onClose, onUpdate }: Props) {
 
   return (
     <Dialog open={!!lead} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border">
+      <DialogContent className="w-[93vw] max-w-[93vw] max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-3">
             {lead.name}
@@ -155,7 +155,7 @@ export default function LeadDetail({ lead, onClose, onUpdate }: Props) {
                 </div>
                 <iframe
                   src={lead.previewUrl}
-                  className="w-full h-64 border-0"
+                  className="w-full h-80 border-0"
                   title={lead.name}
                 />
               </div>

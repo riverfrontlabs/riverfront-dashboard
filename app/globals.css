@@ -85,5 +85,13 @@
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Smooth color bleed as overlay lifts */
+    transition: background-color 280ms ease, color 280ms ease;
+  }
+  /* Carry transitions through key structural elements */
+  header, main, aside, section, footer, nav,
+  .bg-card, [class*='bg-card'],
+  [class*='bg-secondary'], [class*='bg-background'] {
+    transition: background-color 280ms ease, border-color 280ms ease, color 280ms ease;
   }
 }

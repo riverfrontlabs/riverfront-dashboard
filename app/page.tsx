@@ -7,6 +7,8 @@ import LeadDetail from '@/components/LeadDetail';
 import StatsGraph from '@/components/StatsGraph';
 import type { Lead } from '@/lib/types';
 import DiscoverDialog from '@/components/DiscoverDialog';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useTheme } from '@/components/ThemeProvider';
 
 const PAGE_SIZE = 50;
 
@@ -25,6 +27,7 @@ function scoreTier(s: number): { label: string; className: string } {
 }
 
 export default function Dashboard() {
+  const { theme, toggle: toggleTheme } = useTheme();
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [selected,     setSelected]     = useState<Lead | null>(null);
@@ -263,6 +266,7 @@ export default function Dashboard() {
             <Button size="sm" variant="outline" onClick={load} disabled={loading} className="text-xs">
               {loading ? '⏳ Loading...' : '🔄 Refresh'}
             </Button>
+            <ThemeToggle />
           </div>
         </div>
       </header>

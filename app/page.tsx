@@ -323,9 +323,10 @@ export default function Dashboard() {
           </select>
           <button
             onClick={() => setFilterShortlist(f => !f)}
-            className={`text-xs px-2 py-1.5 rounded border transition-colors ${filterShortlist ? 'border-amber-400/50 text-amber-400 bg-amber-400/10' : 'border-border text-muted-foreground hover:text-amber-400 hover:border-amber-400/40'}`}
+            title={filterShortlist ? 'Showing shortlisted only — click to clear' : 'Filter to shortlisted only'}
+            className={`px-2 py-1.5 rounded border transition-all text-xl leading-none ${filterShortlist ? 'border-amber-400/50 bg-amber-400/10 opacity-100' : 'border-border opacity-30 hover:opacity-70'}`}
           >
-            ⭐ Shortlist
+            ⭐
           </button>
           {(search || filterType || filterLoc || filterStatus || filterPriority || filterShortlist) && (
             <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); setFilterPriority(''); setFilterShortlist(false); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">

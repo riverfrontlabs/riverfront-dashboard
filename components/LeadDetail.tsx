@@ -245,8 +245,8 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
           </div>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 mt-2">
-          {/* Left — info + preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_380px] gap-6 mt-2">
+          {/* Left — info */}
           <div className="space-y-4">
             <div className="bg-secondary/50 rounded-lg p-4 space-y-2 text-sm">
               {[
@@ -290,47 +290,6 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
               {generating ? '⏳ Generating preview...' : lead.previewUrl ? '🔄 Regenerate Preview' : '🚀 Generate Preview'}
             </Button>
 
-            {/* iframe — preview or existing site */}
-            {(hasPreview || hasWebsite) && (
-              <div className="rounded-lg overflow-hidden border border-border bg-black">
-                {/* Browser chrome */}
-                <div className="bg-secondary/80 px-3 py-1.5 flex items-center gap-2 border-b border-border">
-                  <div className="flex gap-1 shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-red-500/60" />
-                    <div className="w-2 h-2 rounded-full bg-yellow-500/60" />
-                    <div className="w-2 h-2 rounded-full bg-green-500/60" />
-                  </div>
-                  <span className="text-xs text-muted-foreground truncate flex-1">
-                    {iframeView === 'preview' ? lead.previewUrl : lead.website}
-                  </span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Preview / Current site toggle */}
-                    {hasPreview && hasWebsite && (
-                      <div className="flex border border-border/60 rounded overflow-hidden">
-                        <button onClick={() => setIframeView('preview')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Preview</button>
-                        <button onClick={() => setIframeView('existing')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Current site</button>
-                      </div>
-                    )}
-                    {/* Expand toggle */}
-                    <button
-                      onClick={() => setIframeExpanded(true)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 border border-border/60 rounded"
-                      title="Expand"
-                    >⛶</button>
-                  </div>
-                </div>
-                {iframeView === 'preview' && lead.previewUrl ? (
-                  <iframe src={lead.previewUrl!} className="w-full h-80 border-0" title={`${lead.name} preview`} />
-                ) : hasWebsite ? (
-                  <iframe src={lead.website!} className="w-full h-80 border-0" title={`${lead.name} current site`} />
-                ) : (
-                  <div className="h-80 flex items-center justify-center text-muted-foreground text-sm">
-                    No preview yet — click Generate Preview above
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Expanded iframe modal */}
             {iframeExpanded && (hasPreview || hasWebsite) && (
               <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setIframeExpanded(false)}>
@@ -372,7 +331,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
             )}
           </div>
 
-          {/* Right — tabs */}
+          {/* Middle — tabs */}
           <div className="space-y-4 min-w-0">
             {/* Tab bar */}
             <div className="flex border-b border-border">
@@ -537,6 +496,49 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right — preview */}
+          <div className="flex flex-col gap-3">
+            {(hasPreview || hasWebsite) ? (
+              <div className="rounded-lg overflow-hidden border border-border bg-black flex flex-col h-full min-h-[500px]">
+                {/* Browser chrome */}
+                <div className="bg-secondary/80 px-3 py-1.5 flex items-center gap-2 border-b border-border shrink-0">
+                  <div className="flex gap-1 shrink-0">
+                    <div className="w-2 h-2 rounded-full bg-red-500/60" />
+                    <div className="w-2 h-2 rounded-full bg-yellow-500/60" />
+                    <div className="w-2 h-2 rounded-full bg-green-500/60" />
+                  </div>
+                  <span className="text-xs text-muted-foreground truncate flex-1">
+                    {iframeView === 'preview' ? lead.previewUrl : lead.website}
+                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasPreview && hasWebsite && (
+                      <div className="flex border border-border/60 rounded overflow-hidden">
+                        <button onClick={() => setIframeView('preview')}  className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'preview'  ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Preview</button>
+                        <button onClick={() => setIframeView('existing')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Current</button>
+                      </div>
+                    )}
+                    <button onClick={() => setIframeExpanded(true)} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 border border-border/60 rounded" title="Expand">⛶</button>
+                  </div>
+                </div>
+                {iframeView === 'preview' && lead.previewUrl ? (
+                  <iframe src={lead.previewUrl!} className="w-full flex-1 border-0 bg-white" title={`${lead.name} preview`} />
+                ) : hasWebsite ? (
+                  <iframe src={lead.website!} className="w-full flex-1 border-0 bg-white" title={`${lead.name} current site`} />
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">No preview yet</div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-border flex flex-col items-center justify-center gap-3 h-full min-h-[300px] text-center p-6">
+                <span className="text-3xl">🚀</span>
+                <p className="text-sm text-muted-foreground">No preview yet</p>
+                <Button size="sm" variant="outline" onClick={generatePreview} disabled={generating} className="text-xs">
+                  {generating ? '⏳ Generating...' : '✨ Generate Preview'}
+                </Button>
               </div>
             )}
           </div>

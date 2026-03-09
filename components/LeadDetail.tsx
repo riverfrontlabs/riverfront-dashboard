@@ -182,33 +182,23 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
         )}
 
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="space-y-1">
-              <DialogTitle className="text-xl font-bold text-foreground">{lead.name}</DialogTitle>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-muted-foreground">{lead.type} · {lead.location}</span>
-                {/* Status picker */}
-                <div className="flex gap-1 flex-wrap">
-                  {STATUSES.map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setStatus(s)}
-                      className={`text-xs px-2 py-0.5 rounded border capitalize transition-all ${lead.status === s ? statusColors[s] : 'border-transparent text-muted-foreground/50 hover:text-muted-foreground'}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+          <div className="space-y-1">
+            <DialogTitle className="text-xl font-bold text-foreground">{lead.name}</DialogTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground">{lead.type} · {lead.location}</span>
+              {/* Status picker */}
+              <div className="flex gap-1 flex-wrap">
+                {STATUSES.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setStatus(s)}
+                    className={`text-xs px-2 py-0.5 rounded border capitalize transition-all ${lead.status === s ? statusColors[s] : 'border-transparent text-muted-foreground/50 hover:text-muted-foreground'}`}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             </div>
-            {/* Delete */}
-            <button
-              onClick={deleteLead}
-              disabled={deleting}
-              className={`text-xs px-3 py-1.5 rounded border transition-colors shrink-0 ${confirmDel ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'border-border text-muted-foreground hover:text-red-400 hover:border-red-500/50'}`}
-            >
-              {deleting ? 'Deleting...' : confirmDel ? '⚠️ Confirm delete' : '🗑 Delete lead'}
-            </button>
           </div>
         </DialogHeader>
 
@@ -240,6 +230,15 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
               {lead.emailStatus && <Badge variant="outline" className={`text-xs ${sendStatusColor(lead.emailStatus)}`}>📧 {lead.emailStatus}</Badge>}
               {lead.smsStatus   && <Badge variant="outline" className={`text-xs ${sendStatusColor(lead.smsStatus)}`}>💬 {lead.smsStatus}</Badge>}
             </div>
+
+            {/* Delete — at the bottom of the info panel, far from the close button */}
+            <button
+              onClick={deleteLead}
+              disabled={deleting}
+              className={`w-full text-xs px-3 py-1.5 rounded border transition-colors ${confirmDel ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'border-border text-muted-foreground hover:text-red-400 hover:border-red-500/50'}`}
+            >
+              {deleting ? 'Deleting...' : confirmDel ? '⚠️ Confirm delete' : '🗑 Delete lead'}
+            </button>
 
             {/* Generate preview button */}
             <Button

@@ -146,9 +146,9 @@ function LocationPicker({
   const handleChange = (q: string) => {
     setInput(q);
 
-    // Cancel any pending debounce + in-flight request immediately
+    // Cancel any pending debounce + in-flight request
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (abortRef.current) abortRef.current.abort();
+    if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
 
     if (q.length < 2) {
       setSuggestions([]);
@@ -157,10 +157,9 @@ function LocationPicker({
       return;
     }
 
-    // Show loading right away so the field locks before the debounce fires
-    setLoading(true);
-
+    // Wait for the user to stop typing before fetching
     timerRef.current = setTimeout(async () => {
+      setLoading(true);
       const controller = new AbortController();
       abortRef.current = controller;
       try {
@@ -173,7 +172,7 @@ function LocationPicker({
       } finally {
         setLoading(false);
       }
-    }, 420);
+    }, 700);
   };
 
   const add = (value: string) => {
@@ -193,9 +192,8 @@ function LocationPicker({
           value={input}
           onChange={e => handleChange(e.target.value)}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
-          disabled={loading}
-          placeholder={loading ? 'Searching…' : 'Search for a city…'}
-          className={`w-full bg-background border border-border rounded px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-opacity ${loading ? 'opacity-60 cursor-wait' : ''}`}
+          placeholder="Search for a city…"
+          className="w-full bg-background border border-border rounded px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
         />
         {/* Spinner */}
         {loading && (

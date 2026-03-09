@@ -112,11 +112,18 @@ const DEFAULT_LOCATIONS = ['St. Louis MO'];
 // ── Tag chip ─────────────────────────────────────────────────────────
 function Tag({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-xs text-primary font-medium">
-      {label}
-      <button onClick={onRemove} className="opacity-60 hover:opacity-100 transition-opacity leading-none ml-0.5">✕</button>
+    <span className="inline-flex items-center justify-between gap-2 px-2.5 py-1 rounded-full bg-primary/15 border border-primary/30 text-xs text-primary font-medium">
+      <span>{label}</span>
+      <button onClick={onRemove} className="opacity-50 hover:opacity-100 transition-opacity leading-none shrink-0">✕</button>
     </span>
   );
+}
+
+// ── Split array into columns of n ─────────────────────────────────────
+function toColumns<T>(items: T[], perCol: number): T[][] {
+  const cols: T[][] = [];
+  for (let i = 0; i < items.length; i += perCol) cols.push(items.slice(i, i + perCol));
+  return cols;
 }
 
 // ── Location autocomplete ─────────────────────────────────────────────
@@ -219,9 +226,11 @@ function LocationPicker({
         )}
       </div>
       {selected.length > 0 && (
-        <div className="grid grid-flow-col gap-x-3 w-fit" style={{ gridTemplateRows: 'repeat(6, auto)', rowGap: '4px' }}>
-          {selected.map(v => (
-            <Tag key={v} label={v} onRemove={() => remove(v)} />
+        <div className="flex gap-3">
+          {toColumns(selected, 6).map((col, ci) => (
+            <div key={ci} className="flex flex-col gap-1">
+              {col.map(v => <Tag key={v} label={v} onRemove={() => remove(v)} />)}
+            </div>
           ))}
         </div>
       )}
@@ -293,9 +302,11 @@ function TypePicker({
         )}
       </div>
       {selected.length > 0 && (
-        <div className="grid grid-flow-col gap-x-3 w-fit" style={{ gridTemplateRows: 'repeat(6, auto)', rowGap: '4px' }}>
-          {selected.map(id => (
-            <Tag key={id} label={labelFor(id)} onRemove={() => remove(id)} />
+        <div className="flex gap-3">
+          {toColumns(selected, 6).map((col, ci) => (
+            <div key={ci} className="flex flex-col gap-1">
+              {col.map(id => <Tag key={id} label={labelFor(id)} onRemove={() => remove(id)} />)}
+            </div>
           ))}
         </div>
       )}

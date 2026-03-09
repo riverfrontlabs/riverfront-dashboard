@@ -1,24 +1,35 @@
 /**
  * API Client for Lead Pipeline API
  * All database operations now go through the backend API
- * JWT authentication handled server-side via session
+ * JWT authentication handled via session cookies (server-side) or client-side storage
  */
-
-import { auth } from '@/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export type { Lead, Note, ContactEvent, DailySnapshot } from './types';
 
-// Helper to get auth headers
+// Helper to get auth headers - works both server and client side
 async function getAuthHeaders() {
-  const session = await auth();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   
-  if (session?.accessToken) {
-    headers['Authorization'] = `Bearer ${session.accessToken}`;
+  // Client-side: get token from session
+  if (typeof window !== 'undefined') {
+    const { getSession } = await import('next-auth/react');
+    const session = await getSession();
+    
+    if (session?.accessToken) {
+      headers['Authorization'] = `Bearer ${session.accessToken}`;
+    }
+  } else {
+    // Server-side: use auth() from next-auth
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    
+    if (session?.accessToken) {
+      headers['Authorization'] = `Bearer ${session.accessToken}`;
+    }
   }
   
   return headers;

@@ -1,6 +1,5 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-import { compare } from "bcryptjs"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -48,6 +47,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   callbacks: {
+    authorized({ request, auth }) {
+      const { pathname } = request.nextUrl
+      
+      // Allow login page always
+      if (pathname === '/login') return true
+      
+      // Require auth for all other pages
+      return !!auth
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id

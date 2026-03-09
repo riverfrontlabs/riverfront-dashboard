@@ -39,9 +39,12 @@ function migrate(db: Database.Database) {
       sms          TEXT,
       email_status TEXT,
       sms_status   TEXT,
-      status       TEXT    DEFAULT 'new',
-      created_at   TEXT    DEFAULT (datetime('now')),
-      updated_at   TEXT    DEFAULT (datetime('now'))
+      status         TEXT    DEFAULT 'new',
+      website_score  INTEGER,
+      website_grade  TEXT,
+      website_notes  TEXT,
+      created_at     TEXT    DEFAULT (datetime('now')),
+      updated_at     TEXT    DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS notes (
@@ -74,6 +77,18 @@ function migrate(db: Database.Database) {
 
     CREATE INDEX IF NOT EXISTS idx_leads_type     ON leads(type);
     CREATE INDEX IF NOT EXISTS idx_leads_location ON leads(location);
+  `);
+
+  // Additive migrations for existing DBs
+  const existingCols = (db.prepare(`PRAGMA table_info(leads)`).all() as any[]).map(c => c.name);
+  const addIfMissing = (col: string, def: string) => {
+    if (!existingCols.includes(col)) db.exec(`ALTER TABLE leads ADD COLUMN ${col} ${def}`);
+  };
+  addIfMissing('website_score', 'INTEGER');
+  addIfMissing('website_grade', 'TEXT');
+  addIfMissing('website_notes', 'TEXT');
+
+  db.exec(`
     CREATE INDEX IF NOT EXISTS idx_leads_status   ON leads(status);
     CREATE INDEX IF NOT EXISTS idx_leads_score    ON leads(score);
     CREATE INDEX IF NOT EXISTS idx_notes_lead     ON notes(lead_id);

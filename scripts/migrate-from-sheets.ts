@@ -23,7 +23,11 @@ async function main() {
   const [rawHeaders, ...rows] = res.data.values ?? [[]];
   const col: Record<string, number> = {};
   rawHeaders.forEach((h: string, i: number) => { col[h.trim()] = i; });
-  const g = (row: string[], key: string): string | null => row[col[key]]?.trim() || null;
+  const BOGUS = new Set(['none', 'n/a', 'na', '-', '--', 'no website', 'no site', 'unknown']);
+  const g = (row: string[], key: string): string | null => {
+    const v = row[col[key]]?.trim();
+    return v && !BOGUS.has(v.toLowerCase()) ? v : null;
+  };
 
   let inserted = 0, skipped = 0, failed = 0;
 

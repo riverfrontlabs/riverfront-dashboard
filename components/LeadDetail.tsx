@@ -86,7 +86,8 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
 
   if (!lead) return null;
 
-  const hasWebsite = !!lead.website?.trim();
+  const BOGUS = new Set(['none', 'n/a', 'na', '-', '--', 'no website', 'no site', 'unknown']);
+  const hasWebsite = !!lead.website?.trim() && !BOGUS.has(lead.website.trim().toLowerCase());
   const hasPreview = !!lead.previewUrl?.trim();
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };

@@ -76,13 +76,18 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
     setSms(lead.sms || '');
     setTab('outreach');
     setConfirmDel(false);
-    setIframeView(lead.previewUrl ? 'preview' : lead.website ? 'existing' : 'preview');
+    const _hasPreview = !!lead.previewUrl?.trim();
+    const _hasWebsite = !!lead.website?.trim();
+    setIframeView(_hasPreview ? 'preview' : _hasWebsite ? 'existing' : 'preview');
     // Load notes + events
     fetch(`/api/leads/${lead.id}/notes`).then(r => r.json()).then(d => setNotes(d.notes || []));
     fetch(`/api/leads/${lead.id}/events`).then(r => r.json()).then(d => setEvents(d.events || []));
   }, [lead?.id]);
 
   if (!lead) return null;
+
+  const hasWebsite = !!lead.website?.trim();
+  const hasPreview = !!lead.previewUrl?.trim();
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -253,8 +258,8 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   <Badge variant="outline" className="bg-blue-500/15 text-blue-400 border-blue-500/30 cursor-pointer hover:bg-blue-500/25 text-xs">🔗 Preview</Badge>
                 </a>
               )}
-              {lead.website && (
-                <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer">
+              {hasWebsite && (
+                <a href={lead.website!.startsWith('http') ? lead.website! : `https://${lead.website}`} target="_blank" rel="noopener noreferrer">
                   <Badge variant="outline" className="bg-zinc-500/15 text-zinc-400 border-zinc-500/30 cursor-pointer hover:bg-zinc-500/25 text-xs">🌐 Current site</Badge>
                 </a>
               )}
@@ -274,7 +279,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
             </Button>
 
             {/* iframe — preview or existing site */}
-            {(lead.previewUrl || lead.website) && (
+            {(hasPreview || hasWebsite) && (
               <div className="rounded-lg overflow-hidden border border-border bg-black">
                 {/* Browser chrome */}
                 <div className="bg-secondary/80 px-3 py-1.5 flex items-center gap-2 border-b border-border">
@@ -288,7 +293,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {/* Preview / Current site toggle */}
-                    {lead.previewUrl && lead.website && (
+                    {hasPreview && hasWebsite && (
                       <div className="flex border border-border/60 rounded overflow-hidden">
                         <button onClick={() => setIframeView('preview')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Preview</button>
                         <button onClick={() => setIframeView('existing')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Current site</button>
@@ -303,9 +308,9 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   </div>
                 </div>
                 {iframeView === 'preview' && lead.previewUrl ? (
-                  <iframe src={lead.previewUrl} className="w-full h-80 border-0" title={`${lead.name} preview`} />
-                ) : lead.website ? (
-                  <iframe src={lead.website} className="w-full h-80 border-0" title={`${lead.name} current site`} />
+                  <iframe src={lead.previewUrl!} className="w-full h-80 border-0" title={`${lead.name} preview`} />
+                ) : hasWebsite ? (
+                  <iframe src={lead.website!} className="w-full h-80 border-0" title={`${lead.name} current site`} />
                 ) : (
                   <div className="h-80 flex items-center justify-center text-muted-foreground text-sm">
                     No preview yet — click Generate Preview above
@@ -315,7 +320,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
             )}
 
             {/* Expanded iframe modal */}
-            {iframeExpanded && (lead.previewUrl || lead.website) && (
+            {iframeExpanded && (hasPreview || hasWebsite) && (
               <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setIframeExpanded(false)}>
                 <div className="relative w-[90%] h-[90%] rounded-xl overflow-hidden border border-border shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
                   {/* Chrome */}
@@ -329,14 +334,14 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                       {iframeView === 'preview' ? lead.previewUrl : lead.website}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
-                      {lead.previewUrl && lead.website && (
+                      {hasPreview && hasWebsite && (
                         <div className="flex border border-border/60 rounded overflow-hidden">
                           <button onClick={() => setIframeView('preview')} className={`text-xs px-2.5 py-1 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Preview</button>
                           <button onClick={() => setIframeView('existing')} className={`text-xs px-2.5 py-1 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Current site</button>
                         </div>
                       )}
                       <a
-                        href={iframeView === 'preview' ? lead.previewUrl! : lead.website!}
+                        href={(iframeView === "preview" ? lead.previewUrl : lead.website)!}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-border/60 rounded px-2 py-0.5"
@@ -346,7 +351,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   </div>
                   {/* Full iframe */}
                   {iframeView === 'preview' && lead.previewUrl ? (
-                    <iframe src={lead.previewUrl} className="w-full flex-1 border-0 bg-white" title={`${lead.name} preview`} />
+                    <iframe src={lead.previewUrl!} className="w-full flex-1 border-0 bg-white" title={`${lead.name} preview`} />
                   ) : (
                     <iframe src={lead.website!} className="w-full flex-1 border-0 bg-white" title={`${lead.name} current site`} />
                   )}
@@ -528,3 +533,5 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
     </Dialog>
   );
 }
+
+

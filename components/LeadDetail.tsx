@@ -218,7 +218,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                 ) : (
                   <button
                     onClick={() => setConfirmDel(true)}
-                    className="text-xs px-2 py-0.5 rounded border border-transparent text-muted-foreground/30 hover:text-red-400 hover:border-red-500/40 transition-colors"
+                    className="text-xs px-2 py-0.5 rounded border border-transparent text-red-700 hover:text-red-400 hover:border-red-500/40 transition-colors"
                   >
                     🗑 delete
                   </button>

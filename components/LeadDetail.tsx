@@ -62,9 +62,11 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
   const [drafting,     setDrafting]     = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [sending,      setSending]      = useState<string | null>(null);
+  const [generating,   setGenerating]   = useState(false);
   const [deleting,     setDeleting]     = useState(false);
   const [confirmDel,   setConfirmDel]   = useState(false);
   const [toast,        setToast]        = useState('');
+  const [iframeView,   setIframeView]   = useState<'preview' | 'existing'>('preview');
 
   useEffect(() => {
     if (!lead) return;
@@ -73,6 +75,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
     setSms(lead.sms || '');
     setTab('outreach');
     setConfirmDel(false);
+    setIframeView(lead.previewUrl ? 'preview' : lead.website ? 'existing' : 'preview');
     // Load notes + events
     fetch(`/api/leads/${lead.id}/notes`).then(r => r.json()).then(d => setNotes(d.notes || []));
     fetch(`/api/leads/${lead.id}/events`).then(r => r.json()).then(d => setEvents(d.events || []));
@@ -150,6 +153,21 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
     onClose();
   };
 
+  const generatePreview = async () => {
+    setGenerating(true);
+    try {
+      const res  = await fetch(`/api/leads/${lead.id}/generate`, { method: 'POST' });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      onUpdate({ ...lead, previewUrl: data.previewUrl });
+      setIframeView('preview');
+      // Refresh events
+      fetch(`/api/leads/${lead.id}/events`).then(r => r.json()).then(d => setEvents(d.events || []));
+      flash(`✅ Preview generated → ${data.templateId} template`);
+    } catch (e: any) { flash(`❌ ${e.message}`); }
+    setGenerating(false);
+  };
+
   const hasDraft = emailSubject || emailBody || sms;
 
   return (
@@ -222,17 +240,57 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
               {lead.smsStatus   && <Badge variant="outline" className={`text-xs ${sendStatusColor(lead.smsStatus)}`}>💬 {lead.smsStatus}</Badge>}
             </div>
 
-            {lead.previewUrl && (
+            {/* Generate preview button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={generatePreview}
+              disabled={generating}
+              className="w-full text-xs"
+            >
+              {generating ? '⏳ Generating preview...' : lead.previewUrl ? '🔄 Regenerate Preview' : '🚀 Generate Preview'}
+            </Button>
+
+            {/* iframe — preview or existing site */}
+            {(lead.previewUrl || lead.website) && (
               <div className="rounded-lg overflow-hidden border border-border bg-black">
+                {/* Browser chrome */}
                 <div className="bg-secondary/80 px-3 py-1.5 flex items-center gap-2 border-b border-border">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 shrink-0">
                     <div className="w-2 h-2 rounded-full bg-red-500/60" />
                     <div className="w-2 h-2 rounded-full bg-yellow-500/60" />
                     <div className="w-2 h-2 rounded-full bg-green-500/60" />
                   </div>
-                  <span className="text-xs text-muted-foreground truncate">{lead.previewUrl}</span>
+                  <span className="text-xs text-muted-foreground truncate flex-1">
+                    {iframeView === 'preview' ? lead.previewUrl : lead.website}
+                  </span>
+                  {/* Toggle — only show if both exist */}
+                  {lead.previewUrl && lead.website && (
+                    <div className="flex border border-border/60 rounded overflow-hidden shrink-0">
+                      <button
+                        onClick={() => setIframeView('preview')}
+                        className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => setIframeView('existing')}
+                        className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        Current site
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <iframe src={lead.previewUrl} className="w-full h-80 border-0" title={lead.name} />
+                {iframeView === 'preview' && lead.previewUrl ? (
+                  <iframe src={lead.previewUrl} className="w-full h-80 border-0" title={`${lead.name} preview`} />
+                ) : lead.website ? (
+                  <iframe src={lead.website} className="w-full h-80 border-0" title={`${lead.name} current site`} />
+                ) : (
+                  <div className="h-80 flex items-center justify-center text-muted-foreground text-sm">
+                    No preview yet — click Generate Preview above
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -304,9 +362,15 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-border rounded-lg">
-                    <p className="text-muted-foreground text-sm mb-2">No draft yet</p>
-                    {!lead.previewUrl && <p className="text-xs text-muted-foreground">Needs a preview URL first</p>}
+                  <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-border rounded-lg gap-3">
+                    <p className="text-muted-foreground text-sm">No draft yet</p>
+                    {!lead.previewUrl ? (
+                      <Button size="sm" variant="outline" onClick={generatePreview} disabled={generating} className="text-xs">
+                        {generating ? '⏳ Generating...' : '🚀 Generate Preview First'}
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Click "✨ Generate Draft" above</p>
+                    )}
                   </div>
                 )}
               </div>

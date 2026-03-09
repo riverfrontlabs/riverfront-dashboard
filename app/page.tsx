@@ -279,16 +279,15 @@ export default function Dashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-6 gap-3">
+        <div className="grid grid-cols-5 gap-3">
           {[
-            { label: 'Total',       value: stats.total,       color: 'text-foreground'  },
-            { label: '⭐ Shortlist', value: stats.shortlisted, color: 'text-amber-400',  onClick: () => setFilterShortlist(f => !f) },
-            { label: 'Previewed',   value: stats.preview,     color: 'text-blue-400'    },
-            { label: 'Drafted',     value: stats.drafted,     color: 'text-yellow-400'  },
-            { label: 'Contacted',   value: stats.contacted,   color: 'text-violet-400'  },
-            { label: 'Closed',      value: stats.closed,      color: 'text-green-400'   },
-          ].map(({ label, value, color, onClick }) => (
-            <div key={label} onClick={onClick} className={`bg-card border border-border rounded-lg px-4 py-3 ${onClick ? 'cursor-pointer hover:border-amber-400/50 transition-colors' : ''} ${label === '⭐ Shortlist' && filterShortlist ? 'border-amber-400/50 bg-amber-400/5' : ''}`}>
+            { label: 'Total',     value: stats.total,     color: 'text-foreground' },
+            { label: 'Previewed', value: stats.preview,   color: 'text-blue-400'   },
+            { label: 'Drafted',   value: stats.drafted,   color: 'text-yellow-400' },
+            { label: 'Contacted', value: stats.contacted, color: 'text-violet-400' },
+            { label: 'Closed',    value: stats.closed,    color: 'text-green-400'  },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-card border border-border rounded-lg px-4 py-3">
               <p className="text-muted-foreground text-xs uppercase tracking-widest mb-1">{label}</p>
               <p className={`text-2xl font-bold tabular-nums ${color}`}>{loading ? '—' : value.toLocaleString()}</p>
             </div>
@@ -326,11 +325,27 @@ export default function Dashboard() {
             <option value="cold">🔵 Cold (1-3)</option>
           </select>
           <button
-            onClick={() => setFilterShortlist(f => !f)}
-            title={filterShortlist ? 'Showing shortlisted only — click to clear' : 'Filter to shortlisted only'}
-            className={`px-2 py-1.5 rounded border transition-all text-xl leading-none ${filterShortlist ? 'border-amber-400/50 bg-amber-400/10 opacity-100' : 'border-border opacity-30 hover:opacity-70'}`}
+            onClick={() => stats.shortlisted > 0 && setFilterShortlist(f => !f)}
+            disabled={stats.shortlisted === 0}
+            title={
+              stats.shortlisted === 0
+                ? 'No shortlisted leads'
+                : filterShortlist
+                  ? 'Showing shortlisted only — click to clear'
+                  : 'Filter to shortlisted only'
+            }
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border transition-all leading-none
+              ${stats.shortlisted === 0
+                ? 'border-border opacity-25 cursor-not-allowed'
+                : filterShortlist
+                  ? 'border-amber-400/50 bg-amber-400/10 opacity-100 cursor-pointer'
+                  : 'border-border opacity-40 hover:opacity-80 cursor-pointer'
+              }`}
           >
-            ⭐
+            <span className="text-base">⭐</span>
+            <span className="text-xs tabular-nums text-amber-400 font-medium">
+              {loading ? '—' : stats.shortlisted}
+            </span>
           </button>
           {(search || filterType || filterLoc || filterStatus || filterPriority || filterShortlist) && (
             <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); setFilterPriority(''); setFilterShortlist(false); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">

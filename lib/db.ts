@@ -87,6 +87,7 @@ function migrate(db: Database.Database) {
   addIfMissing('website_score', 'INTEGER');
   addIfMissing('website_grade', 'TEXT');
   addIfMissing('website_notes', 'TEXT');
+  addIfMissing('shortlisted',  'INTEGER DEFAULT 0');
 
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_leads_status   ON leads(status);
@@ -121,6 +122,7 @@ function mapLead(row: any): Lead {
     emailStatus:  row.email_status,
     smsStatus:    row.sms_status,
     status:       row.status,
+    shortlisted:  row.shortlisted ?? 0,
     createdAt:    row.created_at,
     updatedAt:    row.updated_at,
   };

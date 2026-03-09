@@ -1,6 +1,7 @@
 // Shared types — no Node.js imports, safe to use in client components
 
 export interface Lead {
+  shortlisted?: number | null;
   id:           number;
   name:         string;
   phone:        string | null;

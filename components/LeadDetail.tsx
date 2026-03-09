@@ -189,7 +189,18 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
 
         <DialogHeader>
           <div className="space-y-1">
-            <DialogTitle className="text-xl font-bold text-foreground">{lead.name}</DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-xl font-bold text-foreground">{lead.name}</DialogTitle>
+              <button
+                onClick={async () => {
+                  const res  = await fetch(`/api/leads/${lead.id}/shortlist`, { method: 'POST' });
+                  const data = await res.json();
+                  onUpdate({ ...lead, shortlisted: data.shortlisted });
+                }}
+                className={`text-xl leading-none transition-all ${lead.shortlisted ? 'opacity-100' : 'opacity-25 hover:opacity-70'}`}
+                title={lead.shortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
+              >⭐</button>
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground">{lead.type} · {lead.location}</span>
               {/* Status picker + delete inline */}

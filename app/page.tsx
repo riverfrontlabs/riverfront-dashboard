@@ -31,8 +31,9 @@ export default function Dashboard() {
   const [search,       setSearch]       = useState('');
   const [filterType,   setFilterType]   = useState('');
   const [filterLoc,    setFilterLoc]    = useState('');
-  const [filterStatus,   setFilterStatus]   = useState('');
-  const [filterPriority, setFilterPriority] = useState('');
+  const [filterStatus,    setFilterStatus]    = useState('');
+  const [filterPriority,  setFilterPriority]  = useState('');
+  const [filterShortlist, setFilterShortlist] = useState(false);
   const [sortCol,      setSortCol]      = useState<keyof Lead>('score');
   const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('desc');
   const [page,         setPage]         = useState(1);
@@ -58,7 +59,7 @@ export default function Dashboard() {
   useEffect(() => { load(); }, []);
 
   // Reset page + selections when filters change
-  useEffect(() => { setPage(1); setChecked(new Set()); }, [search, filterType, filterLoc, filterStatus, filterPriority]);
+  useEffect(() => { setPage(1); setChecked(new Set()); }, [search, filterType, filterLoc, filterStatus, filterPriority, filterShortlist]);
 
   const types     = useMemo(() => [...new Set(leads.map(l => l.type).filter(Boolean))].sort(),     [leads]);
   const locations = useMemo(() => [...new Set(leads.map(l => l.location).filter(Boolean))].sort(), [leads]);
@@ -76,6 +77,7 @@ export default function Dashboard() {
       if (filterPriority === 'warm' && (l.score < 7 || l.score >= 10)) return false;
       if (filterPriority === 'cool' && (l.score < 4 || l.score >= 7))  return false;
       if (filterPriority === 'cold' && l.score >= 4) return false;
+      if (filterShortlist && !l.shortlisted) return false;
       return true;
     });
     out.sort((a, b) => {
@@ -92,11 +94,12 @@ export default function Dashboard() {
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const stats = {
-    total:     leads.length,
-    preview:   leads.filter(l => l.previewUrl).length,
-    drafted:   leads.filter(l => l.emailSubject).length,
-    contacted: leads.filter(l => ['contacted','replied','booked','closed'].includes(l.status)).length,
-    closed:    leads.filter(l => l.status === 'closed').length,
+    total:       leads.length,
+    shortlisted: leads.filter(l => l.shortlisted).length,
+    preview:     leads.filter(l => l.previewUrl).length,
+    drafted:     leads.filter(l => l.emailSubject).length,
+    contacted:   leads.filter(l => ['contacted','replied','booked','closed'].includes(l.status)).length,
+    closed:      leads.filter(l => l.status === 'closed').length,
   };
 
   const toggleSort = (col: keyof Lead) => {
@@ -231,6 +234,13 @@ export default function Dashboard() {
     setBulkRunning(false);
   };
 
+  const toggleShortlist = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const res  = await fetch(`/api/leads/${id}/shortlist`, { method: 'POST' });
+    const data = await res.json();
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, shortlisted: data.shortlisted } : l));
+  };
+
   const SortIcon = ({ col }: { col: keyof Lead }) =>
     <span className="opacity-60">{sortCol === col ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}</span>;
 
@@ -265,15 +275,16 @@ export default function Dashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-6 gap-3">
           {[
-            { label: 'Total',     value: stats.total,     color: 'text-foreground' },
-            { label: 'Previewed', value: stats.preview,   color: 'text-blue-400'   },
-            { label: 'Drafted',   value: stats.drafted,   color: 'text-yellow-400' },
-            { label: 'Contacted', value: stats.contacted, color: 'text-violet-400' },
-            { label: 'Closed',    value: stats.closed,    color: 'text-green-400'  },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-card border border-border rounded-lg px-4 py-3">
+            { label: 'Total',       value: stats.total,       color: 'text-foreground'  },
+            { label: '⭐ Shortlist', value: stats.shortlisted, color: 'text-amber-400',  onClick: () => setFilterShortlist(f => !f) },
+            { label: 'Previewed',   value: stats.preview,     color: 'text-blue-400'    },
+            { label: 'Drafted',     value: stats.drafted,     color: 'text-yellow-400'  },
+            { label: 'Contacted',   value: stats.contacted,   color: 'text-violet-400'  },
+            { label: 'Closed',      value: stats.closed,      color: 'text-green-400'   },
+          ].map(({ label, value, color, onClick }) => (
+            <div key={label} onClick={onClick} className={`bg-card border border-border rounded-lg px-4 py-3 ${onClick ? 'cursor-pointer hover:border-amber-400/50 transition-colors' : ''} ${label === '⭐ Shortlist' && filterShortlist ? 'border-amber-400/50 bg-amber-400/5' : ''}`}>
               <p className="text-muted-foreground text-xs uppercase tracking-widest mb-1">{label}</p>
               <p className={`text-2xl font-bold tabular-nums ${color}`}>{loading ? '—' : value.toLocaleString()}</p>
             </div>
@@ -310,8 +321,14 @@ export default function Dashboard() {
             <option value="cool">🟡 Cool (4-6)</option>
             <option value="cold">🔵 Cold (1-3)</option>
           </select>
-          {(search || filterType || filterLoc || filterStatus || filterPriority) && (
-            <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); setFilterPriority(''); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={() => setFilterShortlist(f => !f)}
+            className={`text-xs px-2 py-1.5 rounded border transition-colors ${filterShortlist ? 'border-amber-400/50 text-amber-400 bg-amber-400/10' : 'border-border text-muted-foreground hover:text-amber-400 hover:border-amber-400/40'}`}
+          >
+            ⭐ Shortlist
+          </button>
+          {(search || filterType || filterLoc || filterStatus || filterPriority || filterShortlist) && (
+            <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); setFilterPriority(''); setFilterShortlist(false); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               ✕ Clear
             </button>
           )}
@@ -362,6 +379,7 @@ export default function Dashboard() {
                     />
                   </th>
                   {([
+                    { label: '⭐',       col: null },
                     { label: 'Business', col: 'name'     as keyof Lead },
                     { label: 'Type',     col: 'type'     as keyof Lead },
                     { label: 'Location', col: 'location' as keyof Lead },
@@ -400,6 +418,9 @@ export default function Dashboard() {
                           onChange={() => {}}
                           className="accent-primary w-3.5 h-3.5 cursor-pointer"
                         />
+                      </td>
+                      <td className="px-4 py-3" onClick={e => toggleShortlist(lead.id, e)}>
+                        <span className={`text-base leading-none transition-all ${lead.shortlisted ? 'opacity-100' : 'opacity-20 hover:opacity-60'}`}>⭐</span>
                       </td>
                       <td className="px-4 py-3 font-medium text-foreground max-w-[220px] truncate">{lead.name}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{lead.type}</td>

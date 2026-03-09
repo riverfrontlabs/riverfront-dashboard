@@ -347,12 +347,12 @@ export default function Dashboard() {
               ⭐
             </span>
             {/* Count: grey when no favorites; amber when favorites exist (toggle on or off) */}
-            <span className={`text-sm tabular-nums font-medium transition-opacity
+            <span className={`text-base tabular-nums font-medium transition-opacity
               ${stats.shortlisted === 0
                 ? 'text-muted-foreground opacity-25'
                 : 'text-amber-400 opacity-100'
               }`}>
-              {loading ? '—' : stats.shortlisted}
+              {loading || stats.shortlisted === 0 ? '—' : stats.shortlisted}
             </span>
           </button>
           <span className="text-xs text-muted-foreground ml-auto">

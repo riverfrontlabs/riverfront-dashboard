@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import LeadDetail from '@/components/LeadDetail';
 import StatsGraph from '@/components/StatsGraph';
-import type { Lead } from '@/lib/db';
+import type { Lead } from '@/lib/types';
 
 const PAGE_SIZE = 50;
 
@@ -131,7 +131,7 @@ export default function Dashboard() {
   const clearAll  = () => setChecked(new Set());
 
   // Bulk actions
-  const checkedLeads = useMemo(() => filtered.filter(l => checked.has(l.rowIndex)), [filtered, checked]);
+  const checkedLeads = useMemo(() => filtered.filter(l => checked.has(l.id)), [filtered, checked]);
 
   const bulkDraft = async () => {
     const targets = checkedLeads.filter(l => l.previewUrl);
@@ -144,7 +144,7 @@ export default function Dashboard() {
         const res  = await fetch('/api/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lead) });
         const data = await res.json();
         if (data.draft) {
-          setLeads(prev => prev.map(l => l.rowIndex === lead.rowIndex
+          setLeads(prev => prev.map(l => l.id === lead.id
             ? { ...l, emailSubject: data.draft.emailSubject, emailBody: data.draft.emailBody, sms: data.draft.sms, emailStatus: 'Draft', smsStatus: 'Draft' }
             : l));
         }
@@ -169,7 +169,7 @@ export default function Dashboard() {
         const res  = await fetch('/api/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...lead, channel }) });
         const data = await res.json();
         if (data.result) {
-          setLeads(prev => prev.map(l => l.rowIndex === lead.rowIndex ? {
+          setLeads(prev => prev.map(l => l.id === lead.id ? {
             ...l,
             emailStatus: data.result.email === 'sent' ? 'Sent' : l.emailStatus,
             smsStatus:   data.result.sms   === 'sent' ? 'Sent' : l.smsStatus,
@@ -239,11 +239,11 @@ export default function Dashboard() {
           />
           <select value={filterType}   onChange={e => setFilterType(e.target.value)}   className="bg-card border border-border rounded px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary">
             <option value="">All types</option>
-            {types.map(t => <option key={t} value={t}>{t}</option>)}
+            {types.map(t => <option key={t!} value={t!}>{t}</option>)}
           </select>
           <select value={filterLoc}    onChange={e => setFilterLoc(e.target.value)}    className="bg-card border border-border rounded px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary">
             <option value="">All locations</option>
-            {locations.map(l => <option key={l} value={l}>{l}</option>)}
+            {locations.map(l => <option key={l!} value={l!}>{l}</option>)}
           </select>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-card border border-border rounded px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary">
             <option value="">All statuses</option>

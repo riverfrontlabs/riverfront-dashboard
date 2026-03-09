@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import type { Lead, Note, ContactEvent } from '@/lib/db';
+import type { Lead, Note, ContactEvent } from '@/lib/types';
 
 const STATUSES = ['new', 'contacted', 'replied', 'booked', 'closed', 'dead'] as const;
 

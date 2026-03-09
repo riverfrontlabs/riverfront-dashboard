@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ReferenceLine, Area, AreaChart, ComposedChart, Bar,
+  ResponsiveContainer, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ReferenceLine, Area, AreaChart, ComposedChart, Bar, Cell,
 } from 'recharts';
 
 interface Snapshot {
@@ -171,6 +171,7 @@ export default function StatsGraph({ targets, days = 30 }: Props) {
           </button>
         </div>
       ) : view === 'pipeline' ? (
+
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
@@ -211,20 +212,41 @@ export default function StatsGraph({ targets, days = 30 }: Props) {
           </AreaChart>
         </ResponsiveContainer>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={funnelData} layout="vertical" margin={{ top: 5, right: 40, left: 60, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart
+            data={funnelData.map(d => ({ ...d, count: Math.max(d.count, 1) }))}
+            layout="vertical"
+            margin={{ top: 5, right: 80, left: 70, bottom: 0 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.01 260)" horizontal={false} />
-            <XAxis type="number" tick={{ fontSize: 10, fill: 'oklch(0.55 0.01 260)' }} />
-            <YAxis type="category" dataKey="stage" tick={{ fontSize: 11, fill: 'oklch(0.75 0.01 260)' }} width={70} />
+            <XAxis
+              type="number"
+              scale="log"
+              domain={[1, 'auto']}
+              tick={{ fontSize: 10, fill: 'oklch(0.55 0.01 260)' }}
+              tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)}
+              allowDataOverflow
+            />
+            <YAxis
+              type="category"
+              dataKey="stage"
+              tick={{ fontSize: 11, fill: 'oklch(0.75 0.01 260)' }}
+              width={68}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="count" radius={[0, 4, 4, 0]}
-              fill="url(#grad-contacted)"
-              label={{ position: 'right', fontSize: 11, fill: 'oklch(0.75 0.01 260)' }}
-              background={{ fill: 'oklch(0.18 0.01 260)', radius: 4 }}
+            <Bar
+              dataKey="count"
+              radius={[0, 5, 5, 0]}
+              background={{ fill: 'oklch(0.18 0.01 260)', radius: 5 } as any}
+              label={{
+                position: 'right' as const,
+                fontSize: 11,
+                fill: 'oklch(0.75 0.01 260)',
+              }}
             >
-              {funnelData.map((_, i) => {
-                const colors = Object.values(COLORS);
-                return <rect key={i} fill={colors[i % colors.length]} />;
+              {funnelData.map((entry, i) => {
+                const colorList = Object.values(COLORS);
+                return <Cell key={entry.stage} fill={colorList[i % colorList.length]} fillOpacity={0.85} />;
               })}
             </Bar>
           </ComposedChart>

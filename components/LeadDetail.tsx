@@ -198,13 +198,30 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   </button>
                 ))}
                 <span className="text-muted-foreground/30 text-xs select-none">·</span>
-                <button
-                  onClick={deleteLead}
-                  disabled={deleting}
-                  className={`text-xs px-2 py-0.5 rounded border capitalize transition-colors ${confirmDel ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'border-transparent text-muted-foreground/30 hover:text-red-400 hover:border-red-500/40'}`}
-                >
-                  {deleting ? 'deleting...' : confirmDel ? '⚠️ confirm' : '🗑 delete'}
-                </button>
+                {confirmDel ? (
+                  <>
+                    <button
+                      onClick={deleteLead}
+                      disabled={deleting}
+                      className="text-xs px-2 py-0.5 rounded border bg-red-500/20 border-red-500/50 text-red-400 transition-colors"
+                    >
+                      {deleting ? 'deleting...' : '⚠️ confirm'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDel(false)}
+                      className="text-xs px-2 py-0.5 rounded border border-transparent text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDel(true)}
+                    className="text-xs px-2 py-0.5 rounded border border-transparent text-muted-foreground/30 hover:text-red-400 hover:border-red-500/40 transition-colors"
+                  >
+                    🗑 delete
+                  </button>
+                )}
               </div>
             </div>
           </div>

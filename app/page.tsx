@@ -16,10 +16,11 @@ function statusColor(s: string) {
   return '';
 }
 
-function scoreColor(s: number) {
-  if (s >= 8) return 'text-green-400';
-  if (s >= 5) return 'text-yellow-400';
-  return 'text-red-400';
+function scoreTier(s: number): { label: string; className: string } {
+  if (s >= 10) return { label: '🔥 Hot',  className: 'bg-red-500/15 text-red-400 border-red-500/30'    };
+  if (s >= 7)  return { label: '🟠 Warm', className: 'bg-orange-500/15 text-orange-400 border-orange-500/30' };
+  if (s >= 4)  return { label: '🟡 Cool', className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' };
+  return       { label: '🔵 Cold', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30'   };
 }
 
 export default function Dashboard() {
@@ -29,7 +30,8 @@ export default function Dashboard() {
   const [search,       setSearch]       = useState('');
   const [filterType,   setFilterType]   = useState('');
   const [filterLoc,    setFilterLoc]    = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus,   setFilterStatus]   = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
   const [sortCol,      setSortCol]      = useState<keyof Lead>('score');
   const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('desc');
   const [page,         setPage]         = useState(1);
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [bulkStatus,   setBulkStatus]   = useState('');
   const [bulkRunning,  setBulkRunning]  = useState(false);
   const [showGraph,    setShowGraph]    = useState(false);
+  const [confirm,      setConfirm]      = useState<{ action: 'generate' | 'delete'; count: number } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -53,7 +56,7 @@ export default function Dashboard() {
   useEffect(() => { load(); }, []);
 
   // Reset page + selections when filters change
-  useEffect(() => { setPage(1); setChecked(new Set()); }, [search, filterType, filterLoc, filterStatus]);
+  useEffect(() => { setPage(1); setChecked(new Set()); }, [search, filterType, filterLoc, filterStatus, filterPriority]);
 
   const types     = useMemo(() => [...new Set(leads.map(l => l.type).filter(Boolean))].sort(),     [leads]);
   const locations = useMemo(() => [...new Set(leads.map(l => l.location).filter(Boolean))].sort(), [leads]);
@@ -67,6 +70,10 @@ export default function Dashboard() {
       if (filterStatus === 'drafted' && !l.emailSubject) return false;
       if (filterStatus === 'sent'    && l.emailStatus !== 'Sent' && l.smsStatus !== 'Sent') return false;
       if (filterStatus === 'unsent'  && (l.emailStatus === 'Sent' || l.smsStatus === 'Sent')) return false;
+      if (filterPriority === 'hot'  && l.score < 10) return false;
+      if (filterPriority === 'warm' && (l.score < 7 || l.score >= 10)) return false;
+      if (filterPriority === 'cool' && (l.score < 4 || l.score >= 7))  return false;
+      if (filterPriority === 'cold' && l.score >= 4) return false;
       return true;
     });
     out.sort((a, b) => {
@@ -183,6 +190,45 @@ export default function Dashboard() {
     setBulkRunning(false);
   };
 
+  const bulkGenerate = async () => {
+    const targets = checkedLeads;
+    if (!targets.length) return;
+    setBulkRunning(true);
+    let done = 0;
+    for (const lead of targets) {
+      setBulkStatus(`Generating ${++done}/${targets.length}: ${lead.name}`);
+      try {
+        const res  = await fetch(`/api/leads/${lead.id}/generate`, { method: 'POST' });
+        const data = await res.json();
+        if (data.previewUrl) {
+          setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, previewUrl: data.previewUrl } : l));
+        }
+      } catch {}
+      await new Promise(r => setTimeout(r, 1200));
+    }
+    setBulkStatus(`✅ Generated ${done} previews`);
+    setTimeout(() => setBulkStatus(''), 4000);
+    setBulkRunning(false);
+  };
+
+  const bulkDelete = async () => {
+    const targets = checkedLeads;
+    if (!targets.length) return;
+    setBulkRunning(true);
+    let done = 0;
+    for (const lead of targets) {
+      setBulkStatus(`Deleting ${++done}/${targets.length}: ${lead.name}`);
+      try {
+        await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+        setLeads(prev => prev.filter(l => l.id !== lead.id));
+      } catch {}
+    }
+    setChecked(new Set());
+    setBulkStatus(`✅ Deleted ${done} leads`);
+    setTimeout(() => setBulkStatus(''), 4000);
+    setBulkRunning(false);
+  };
+
   const SortIcon = ({ col }: { col: keyof Lead }) =>
     <span className="opacity-60">{sortCol === col ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}</span>;
 
@@ -252,8 +298,15 @@ export default function Dashboard() {
             <option value="sent">Sent</option>
             <option value="unsent">Not sent</option>
           </select>
-          {(search || filterType || filterLoc || filterStatus) && (
-            <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="bg-card border border-border rounded px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary">
+            <option value="">All priorities</option>
+            <option value="hot">🔥 Hot (10+)</option>
+            <option value="warm">🟠 Warm (7-9)</option>
+            <option value="cool">🟡 Cool (4-6)</option>
+            <option value="cold">🔵 Cold (1-3)</option>
+          </select>
+          {(search || filterType || filterLoc || filterStatus || filterPriority) && (
+            <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); setFilterPriority(''); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               ✕ Clear
             </button>
           )}
@@ -275,10 +328,12 @@ export default function Dashboard() {
               Clear
             </button>
             <div className="flex gap-2 ml-auto flex-wrap">
-              <Button size="sm" variant="outline" onClick={bulkDraft}          disabled={bulkRunning} className="text-xs h-7">✨ Generate Drafts</Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirm({ action: 'generate', count: checkedLeads.length })} disabled={bulkRunning} className="text-xs h-7">🚀 Generate Previews</Button>
+              <Button size="sm" variant="outline" onClick={bulkDraft}               disabled={bulkRunning} className="text-xs h-7">✨ Draft Outreach</Button>
               <Button size="sm" variant="outline" onClick={() => bulkSend('email')} disabled={bulkRunning} className="text-xs h-7">📧 Send Email</Button>
               <Button size="sm" variant="outline" onClick={() => bulkSend('sms')}   disabled={bulkRunning} className="text-xs h-7">💬 Send SMS</Button>
               <Button size="sm" variant="outline" onClick={() => bulkSend('both')}  disabled={bulkRunning} className="text-xs h-7">📧💬 Send Both</Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirm({ action: 'delete', count: checkedLeads.length })} disabled={bulkRunning} className="text-xs h-7 text-red-700 hover:text-red-400 border-red-900/40 hover:border-red-500/50">🗑 Delete</Button>
             </div>
             {bulkStatus && (
               <span className="text-xs text-muted-foreground w-full pt-1">{bulkStatus}</span>
@@ -305,7 +360,7 @@ export default function Dashboard() {
                     { label: 'Business', col: 'name'     as keyof Lead },
                     { label: 'Type',     col: 'type'     as keyof Lead },
                     { label: 'Location', col: 'location' as keyof Lead },
-                    { label: 'Score',    col: 'score'    as keyof Lead },
+                    { label: 'Priority', col: 'score'    as keyof Lead },
                     { label: 'Preview',  col: null },
                     { label: 'Email',    col: null },
                     { label: 'SMS',      col: null },
@@ -345,7 +400,9 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{lead.type}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{lead.location}</td>
                       <td className="px-4 py-3">
-                        <span className={`font-bold tabular-nums ${scoreColor(lead.score)}`}>{lead.score}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded border font-medium ${scoreTier(lead.score).className}`}>
+                          {scoreTier(lead.score).label}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         {lead.previewUrl
@@ -404,6 +461,45 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Bulk confirm dialog */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold text-foreground">
+                {confirm.action === 'delete' ? '🗑 Delete leads?' : '🚀 Generate previews?'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {confirm.action === 'delete'
+                  ? `This will permanently delete ${confirm.count} lead${confirm.count !== 1 ? 's' : ''}. This cannot be undone.`
+                  : `Generate AI preview pages for ${confirm.count} lead${confirm.count !== 1 ? 's' : ''}. Each will be committed and pushed to Netlify.`}
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirm(null)}
+                className="text-xs border-blue-400/40 text-blue-400 hover:bg-blue-400/10"
+              >
+                ← Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setConfirm(null);
+                  if (confirm.action === 'delete')   bulkDelete();
+                  if (confirm.action === 'generate') bulkGenerate();
+                }}
+                className={`text-xs ${confirm.action === 'delete' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-primary hover:bg-primary/90'}`}
+              >
+                {confirm.action === 'delete' ? '✕ Delete' : '🚀 Generate'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lead detail modal */}
       <LeadDetail

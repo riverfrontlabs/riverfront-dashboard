@@ -243,7 +243,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                 ['Email',   lead.email || '—'],
                 ['Address', lead.address || '—'],
                 ['Rating',  lead.rating ? `${lead.rating} ★` : '—'],
-                ['Score',   `${lead.score}/10`],
+                ['Priority', lead.score >= 10 ? `🔥 Hot (${lead.score})` : lead.score >= 7 ? `🟠 Warm (${lead.score})` : lead.score >= 4 ? `🟡 Cool (${lead.score})` : `🔵 Cold (${lead.score})`],
                 ['Website', lead.website || '—'],
               ].map(([label, value]) => (
                 <div key={label} className="flex gap-3">

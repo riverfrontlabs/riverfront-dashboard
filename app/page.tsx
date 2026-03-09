@@ -334,12 +334,12 @@ export default function Dashboard() {
                   ? 'Showing shortlisted only — click to clear'
                   : 'Filter to shortlisted only'
             }
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border transition-all leading-none
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-all leading-none
               ${stats.shortlisted === 0
-                ? 'border-border cursor-not-allowed'
+                ? 'cursor-not-allowed'
                 : filterShortlist
-                  ? 'border-amber-400/50 bg-amber-400/10 cursor-pointer hover:border-amber-400/70'
-                  : 'border-border cursor-pointer hover:border-border/80'
+                  ? 'bg-amber-400/10 cursor-pointer'
+                  : 'cursor-pointer'
               }`}
           >
             {/* Star: grey when no favorites OR toggle off; amber when toggle on */}
@@ -347,7 +347,7 @@ export default function Dashboard() {
               ⭐
             </span>
             {/* Count: grey when no favorites; amber when favorites exist (toggle on or off) */}
-            <span className={`text-xs tabular-nums font-medium transition-opacity
+            <span className={`text-sm tabular-nums font-medium transition-opacity
               ${stats.shortlisted === 0
                 ? 'text-muted-foreground opacity-25'
                 : 'text-amber-400 opacity-100'

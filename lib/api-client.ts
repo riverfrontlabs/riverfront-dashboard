@@ -1,11 +1,28 @@
 /**
  * API Client for Lead Pipeline API
  * All database operations now go through the backend API
+ * JWT authentication handled server-side via session
  */
+
+import { auth } from '@/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export type { Lead, Note, ContactEvent, DailySnapshot } from './types';
+
+// Helper to get auth headers
+async function getAuthHeaders() {
+  const session = await auth();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (session?.accessToken) {
+    headers['Authorization'] = `Bearer ${session.accessToken}`;
+  }
+  
+  return headers;
+}
 
 // ── Leads ─────────────────────────────────────────────────────────────────────
 
@@ -29,14 +46,16 @@ export async function getLeads(filters?: {
     });
   }
   
-  const res = await fetch(`${API_URL}/api/leads?${params}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/leads?${params}`, { headers });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();
   return data.leads;
 }
 
 export async function getLead(id: number) {
-  const res = await fetch(`${API_URL}/api/leads/${id}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/leads/${id}`, { headers });
   if (!res.ok) {
     if (res.status === 404) return null;
     throw new Error(`API error: ${res.statusText}`);
@@ -46,9 +65,10 @@ export async function getLead(id: number) {
 }
 
 export async function updateLead(id: number, updates: any) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/leads/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -59,16 +79,18 @@ export async function updateLead(id: number, updates: any) {
 // ── Notes ─────────────────────────────────────────────────────────────────────
 
 export async function getNotes(leadId: number) {
-  const res = await fetch(`${API_URL}/api/leads/${leadId}/notes`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/leads/${leadId}/notes`, { headers });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();
   return data.notes;
 }
 
 export async function addNote(leadId: number, content: string) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/leads/${leadId}/notes`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ content }),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -79,16 +101,18 @@ export async function addNote(leadId: number, content: string) {
 // ── Events ────────────────────────────────────────────────────────────────────
 
 export async function getEvents(leadId: number) {
-  const res = await fetch(`${API_URL}/api/leads/${leadId}/events`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/leads/${leadId}/events`, { headers });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();
   return data.events;
 }
 
 export async function addEvent(leadId: number, type: string, detail?: string) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/leads/${leadId}/events`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ type, detail }),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -99,8 +123,10 @@ export async function addEvent(leadId: number, type: string, detail?: string) {
 // ── Shortlist ─────────────────────────────────────────────────────────────────
 
 export async function toggleShortlist(leadId: number) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/leads/${leadId}/shortlist`, {
     method: 'POST',
+    headers,
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();
@@ -110,8 +136,10 @@ export async function toggleShortlist(leadId: number) {
 // ── Generate ──────────────────────────────────────────────────────────────────
 
 export async function generatePreview(leadId: number) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/generate/${leadId}`, {
     method: 'POST',
+    headers,
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   return await res.json();
@@ -120,8 +148,10 @@ export async function generatePreview(leadId: number) {
 // ── Draft ─────────────────────────────────────────────────────────────────────
 
 export async function generateDraft(leadId: number) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/draft/${leadId}`, {
     method: 'POST',
+    headers,
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   return await res.json();
@@ -132,9 +162,10 @@ export async function updateDraft(leadId: number, draft: {
   emailBody?: string;
   sms?: string;
 }) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/draft/update`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ id: leadId, ...draft }),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -144,9 +175,10 @@ export async function updateDraft(leadId: number, draft: {
 // ── Send ──────────────────────────────────────────────────────────────────────
 
 export async function sendOutreach(leadIds: number[], method: 'email' | 'sms' | 'both', dryRun = false) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/send`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ leadIds, method, dryRun }),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -156,15 +188,18 @@ export async function sendOutreach(leadIds: number[], method: 'email' | 'sms' | 
 // ── Snapshots ─────────────────────────────────────────────────────────────────
 
 export async function getSnapshots(days = 30) {
-  const res = await fetch(`${API_URL}/api/snapshots?days=${days}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/snapshots?days=${days}`, { headers });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();
   return data.snapshots;
 }
 
 export async function recordSnapshot() {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/snapshots`, {
     method: 'POST',
+    headers,
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();
@@ -175,22 +210,24 @@ export async function recordSnapshot() {
 
 export async function searchCities(query: string) {
   if (query.length < 2) return [];
-  const res = await fetch(`${API_URL}/api/cities?q=${encodeURIComponent(query)}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/cities?q=${encodeURIComponent(query)}`, { headers });
   if (!res.ok) return [];
   return await res.json();
 }
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
-export function discoverLeads(params: {
+export async function discoverLeads(params: {
   locations: string;
   types: string;
   limit: number;
 }) {
-  // Returns an EventSource for server-sent events
+  // Returns a fetch Response for server-sent events
+  const headers = await getAuthHeaders();
   return fetch(`${API_URL}/api/discover`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(params),
   });
 }

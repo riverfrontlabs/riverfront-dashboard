@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import LeadDetail from '@/components/LeadDetail';
-import type { Lead } from '@/lib/sheets';
+import StatsGraph from '@/components/StatsGraph';
+import type { Lead } from '@/lib/db';
 
 const PAGE_SIZE = 50;
 
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const [checked,      setChecked]      = useState<Set<number>>(new Set());
   const [bulkStatus,   setBulkStatus]   = useState('');
   const [bulkRunning,  setBulkRunning]  = useState(false);
+  const [showGraph,    setShowGraph]    = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -81,10 +83,11 @@ export default function Dashboard() {
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const stats = {
-    total:   leads.length,
-    preview: leads.filter(l => l.previewUrl).length,
-    drafted: leads.filter(l => l.emailSubject).length,
-    sent:    leads.filter(l => l.emailStatus === 'Sent' || l.smsStatus === 'Sent').length,
+    total:     leads.length,
+    preview:   leads.filter(l => l.previewUrl).length,
+    drafted:   leads.filter(l => l.emailSubject).length,
+    contacted: leads.filter(l => ['contacted','replied','booked','closed'].includes(l.status)).length,
+    closed:    leads.filter(l => l.status === 'closed').length,
   };
 
   const toggleSort = (col: keyof Lead) => {
@@ -93,12 +96,17 @@ export default function Dashboard() {
   };
 
   const updateLead = useCallback((updated: Lead) => {
-    setLeads(prev => prev.map(l => l.rowIndex === updated.rowIndex ? updated : l));
+    setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
     setSelected(updated);
   }, []);
 
+  const deleteLead = useCallback((id: number) => {
+    setLeads(prev => prev.filter(l => l.id !== id));
+    setSelected(null);
+  }, []);
+
   // Checkbox logic
-  const pageRowIds   = paginated.map(l => l.rowIndex);
+  const pageRowIds     = paginated.map(l => l.id);
   const allPageChecked = pageRowIds.length > 0 && pageRowIds.every(id => checked.has(id));
   const someChecked    = checked.size > 0;
 
@@ -119,7 +127,7 @@ export default function Dashboard() {
     }
   };
 
-  const selectAll = () => setChecked(new Set(filtered.map(l => l.rowIndex)));
+  const selectAll = () => setChecked(new Set(filtered.map(l => l.id)));
   const clearAll  = () => setChecked(new Set());
 
   // Bulk actions
@@ -187,25 +195,36 @@ export default function Dashboard() {
             <span className="text-primary font-bold text-lg tracking-tight">Riverfront Labs</span>
             <span className="text-muted-foreground text-sm">/ Lead Dashboard</span>
           </div>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading} className="text-xs">
-            {loading ? '⏳ Loading...' : '🔄 Refresh'}
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowGraph(g => !g)} className={`text-xs ${showGraph ? 'bg-primary/20 border-primary/50' : ''}`}>
+              📈 {showGraph ? 'Hide Graph' : 'Show Graph'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={load} disabled={loading} className="text-xs">
+              {loading ? '⏳ Loading...' : '🔄 Refresh'}
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-5">
 
+        {/* Graph */}
+        {showGraph && (
+          <StatsGraph targets={{ contacted: 500, closed: 25 }} days={60} />
+        )}
+
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-3">
           {[
-            { label: 'Total Leads', value: stats.total,   color: 'text-foreground' },
-            { label: 'Previewed',   value: stats.preview, color: 'text-blue-400'   },
-            { label: 'Drafted',     value: stats.drafted, color: 'text-yellow-400' },
-            { label: 'Sent',        value: stats.sent,    color: 'text-green-400'  },
+            { label: 'Total',     value: stats.total,     color: 'text-foreground' },
+            { label: 'Previewed', value: stats.preview,   color: 'text-blue-400'   },
+            { label: 'Drafted',   value: stats.drafted,   color: 'text-yellow-400' },
+            { label: 'Contacted', value: stats.contacted, color: 'text-violet-400' },
+            { label: 'Closed',    value: stats.closed,    color: 'text-green-400'  },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-card border border-border rounded-lg p-4">
+            <div key={label} className="bg-card border border-border rounded-lg px-4 py-3">
               <p className="text-muted-foreground text-xs uppercase tracking-widest mb-1">{label}</p>
-              <p className={`text-3xl font-bold ${color}`}>{loading ? '—' : value}</p>
+              <p className={`text-2xl font-bold tabular-nums ${color}`}>{loading ? '—' : value.toLocaleString()}</p>
             </div>
           ))}
         </div>
@@ -307,14 +326,14 @@ export default function Dashboard() {
                 ) : paginated.length === 0 ? (
                   <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No leads match filters</td></tr>
                 ) : paginated.map((lead, i) => {
-                  const isChecked = checked.has(lead.rowIndex);
+                  const isChecked = checked.has(lead.id);
                   return (
                     <tr
-                      key={lead.rowIndex}
+                      key={lead.id}
                       onClick={() => setSelected(lead)}
                       className={`border-b border-border/50 cursor-pointer hover:bg-secondary/40 transition-colors ${isChecked ? 'bg-primary/5' : i % 2 === 0 ? '' : 'bg-secondary/10'}`}
                     >
-                      <td className="px-4 py-3" onClick={e => toggleRow(lead.rowIndex, e)}>
+                      <td className="px-4 py-3" onClick={e => toggleRow(lead.id, e)}>
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -391,6 +410,7 @@ export default function Dashboard() {
         lead={selected}
         onClose={() => setSelected(null)}
         onUpdate={updateLead}
+        onDelete={deleteLead}
       />
     </div>
   );

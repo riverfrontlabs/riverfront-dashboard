@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { getLeads, ensureColumns, updateLeadCells, colLetter } from '@/lib/sheets';
+import { updateLead, addEvent } from '@/lib/db';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const DRAFT_COLS = ['Email Subject', 'Email Body', 'SMS', 'Email Status', 'SMS Status'];
-
 export async function POST(req: NextRequest) {
   try {
-    const { rowIndex, name, type, location, rating, score, previewUrl } = await req.json();
+    const lead = await req.json();
+    const { id, name, type, location, rating, score, previewUrl } = lead;
 
     if (!previewUrl) return NextResponse.json({ error: 'No preview URL' }, { status: 400 });
 
@@ -51,18 +50,16 @@ Reply ONLY with valid JSON: { "emailSubject": "...", "emailBody": "...", "sms": 
 
     if (!draft.emailBody.includes(previewUrl)) draft.emailBody += `\n\n${previewUrl}`;
 
-    // Write to sheet
-    const headers = await ensureColumns(DRAFT_COLS);
-    const col: Record<string, number> = {};
-    headers.forEach((h: string, i: number) => { col[h.trim()] = i; });
-
-    await updateLeadCells([
-      { range: `Sheet1!${colLetter(col['Email Subject'])}${rowIndex}`, value: draft.emailSubject },
-      { range: `Sheet1!${colLetter(col['Email Body'])}${rowIndex}`,    value: draft.emailBody    },
-      { range: `Sheet1!${colLetter(col['SMS'])}${rowIndex}`,           value: draft.sms          },
-      { range: `Sheet1!${colLetter(col['Email Status'])}${rowIndex}`,  value: 'Draft'            },
-      { range: `Sheet1!${colLetter(col['SMS Status'])}${rowIndex}`,    value: 'Draft'            },
-    ]);
+    if (id) {
+      updateLead(id, {
+        emailSubject: draft.emailSubject,
+        emailBody:    draft.emailBody,
+        sms:          draft.sms,
+        emailStatus:  'Draft',
+        smsStatus:    'Draft',
+      });
+      addEvent(id, 'draft_created');
+    }
 
     return NextResponse.json({ draft });
   } catch (err: any) {

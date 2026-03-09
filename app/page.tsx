@@ -336,22 +336,25 @@ export default function Dashboard() {
             }
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border transition-all leading-none
               ${stats.shortlisted === 0
-                ? 'border-border opacity-25 cursor-not-allowed'
+                ? 'border-border cursor-not-allowed'
                 : filterShortlist
-                  ? 'border-amber-400/50 bg-amber-400/10 opacity-100 cursor-pointer'
-                  : 'border-border opacity-40 hover:opacity-80 cursor-pointer'
+                  ? 'border-amber-400/50 bg-amber-400/10 cursor-pointer hover:border-amber-400/70'
+                  : 'border-border cursor-pointer hover:border-border/80'
               }`}
           >
-            <span className="text-base">⭐</span>
-            <span className="text-xs tabular-nums text-amber-400 font-medium">
+            {/* Star: grey when no favorites OR toggle off; amber when toggle on */}
+            <span className={`text-base transition-opacity ${filterShortlist ? 'opacity-100' : 'opacity-25'}`}>
+              ⭐
+            </span>
+            {/* Count: grey when no favorites; amber when favorites exist (toggle on or off) */}
+            <span className={`text-xs tabular-nums font-medium transition-opacity
+              ${stats.shortlisted === 0
+                ? 'text-muted-foreground opacity-25'
+                : 'text-amber-400 opacity-100'
+              }`}>
               {loading ? '—' : stats.shortlisted}
             </span>
           </button>
-          {(search || filterType || filterLoc || filterStatus || filterPriority || filterShortlist) && (
-            <button onClick={() => { setSearch(''); setFilterType(''); setFilterLoc(''); setFilterStatus(''); setFilterPriority(''); setFilterShortlist(false); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              ✕ Clear
-            </button>
-          )}
           <span className="text-xs text-muted-foreground ml-auto">
             {filtered.length.toLocaleString()} of {leads.length.toLocaleString()} leads
           </span>

@@ -219,7 +219,7 @@ function LocationPicker({
         )}
       </div>
       {selected.length > 0 && (
-        <div className="grid grid-flow-col grid-rows-6 gap-x-3 gap-y-1.5 w-fit">
+        <div className="grid grid-flow-col gap-x-3 w-fit" style={{ gridTemplateRows: 'repeat(6, auto)', rowGap: '4px' }}>
           {selected.map(v => (
             <Tag key={v} label={v} onRemove={() => remove(v)} />
           ))}
@@ -293,7 +293,7 @@ function TypePicker({
         )}
       </div>
       {selected.length > 0 && (
-        <div className="grid grid-flow-col grid-rows-6 gap-x-3 gap-y-1.5 w-fit">
+        <div className="grid grid-flow-col gap-x-3 w-fit" style={{ gridTemplateRows: 'repeat(6, auto)', rowGap: '4px' }}>
           {selected.map(id => (
             <Tag key={id} label={labelFor(id)} onRemove={() => remove(id)} />
           ))}

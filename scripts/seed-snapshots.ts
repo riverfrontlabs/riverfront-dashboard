@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 
 const DB_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../data/crm.db');
 const db = new Database(DB_PATH);
-const DAYS = 60;
+const DAYS = 365;
 
 function jitter(n: number, pct = 0.12) {
   return Math.max(0, Math.round(n * (1 + (Math.random() - 0.5) * pct)));

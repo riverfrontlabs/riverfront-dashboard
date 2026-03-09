@@ -210,7 +210,7 @@ export default function Dashboard() {
 
         {/* Graph */}
         {showGraph && (
-          <StatsGraph targets={{ contacted: 500, closed: 25 }} days={60} />
+          <StatsGraph targets={{ contacted: 500, closed: 25 }} />
         )}
 
         {/* Stats */}

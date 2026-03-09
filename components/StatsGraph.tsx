@@ -12,9 +12,17 @@ interface Snapshot {
   contacted: number; replied: number; booked: number; closed: number;
 }
 
+const RANGES = [
+  { label: '1W',  days: 7   },
+  { label: '1M',  days: 30  },
+  { label: '6M',  days: 180 },
+  { label: '1Y',  days: 365 },
+] as const;
+
+type RangeDays = typeof RANGES[number]['days'];
+
 interface Props {
   targets?: { contacted: number; closed: number };
-  days?: number;
 }
 
 const COLORS = {
@@ -74,16 +82,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function StatsGraph({ targets, days = 30 }: Props) {
+export default function StatsGraph({ targets }: Props) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [view,      setView]      = useState<'pipeline' | 'funnel'>('pipeline');
   const [loading,   setLoading]   = useState(true);
+  const [range,     setRange]     = useState<RangeDays>(30);
 
   useEffect(() => {
-    fetch(`/api/snapshots?days=${days}`)
+    setLoading(true);
+    fetch(`/api/snapshots?days=${range}`)
       .then(r => r.json())
       .then(d => { setSnapshots(d.snapshots || []); setLoading(false); });
-  }, [days]);
+  }, [range]);
 
   const projected = project(snapshots);
   const chartData = [
@@ -118,16 +128,20 @@ export default function StatsGraph({ targets, days = 30 }: Props) {
             {latest && ` · ${conversionRate}% close rate`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Snapshot button */}
-          <button
-            onClick={() => fetch('/api/snapshots', { method: 'POST' }).then(() =>
-              fetch(`/api/snapshots?days=${days}`).then(r => r.json()).then(d => setSnapshots(d.snapshots || []))
-            )}
-            className="text-xs text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
-          >
-            📸 Snapshot now
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Range selector */}
+          <div className="flex border border-border rounded overflow-hidden">
+            {RANGES.map(({ label, days }) => (
+              <button
+                key={label}
+                onClick={() => setRange(days)}
+                className={`text-xs px-3 py-1 transition-colors ${range === days ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* View toggle */}
           <div className="flex border border-border rounded overflow-hidden">
             {(['pipeline', 'funnel'] as const).map(v => (
               <button
@@ -139,6 +153,15 @@ export default function StatsGraph({ targets, days = 30 }: Props) {
               </button>
             ))}
           </div>
+          {/* Snapshot button */}
+          <button
+            onClick={() => fetch('/api/snapshots', { method: 'POST' }).then(() =>
+              fetch(`/api/snapshots?days=${range}`).then(r => r.json()).then(d => setSnapshots(d.snapshots || []))
+            )}
+            className="text-xs text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
+          >
+            📸
+          </button>
         </div>
       </div>
 
@@ -160,10 +183,10 @@ export default function StatsGraph({ targets, days = 30 }: Props) {
         </div>
       ) : snapshots.length === 0 ? (
         <div className="h-64 flex flex-col items-center justify-center text-muted-foreground text-sm gap-3">
-          <p>No historical data yet.</p>
+          <p>No data for this range.</p>
           <button
             onClick={() => fetch('/api/snapshots', { method: 'POST' }).then(() =>
-              fetch(`/api/snapshots?days=${days}`).then(r => r.json()).then(d => setSnapshots(d.snapshots || []))
+              fetch(`/api/snapshots?days=${range}`).then(r => r.json()).then(d => setSnapshots(d.snapshots || []))
             )}
             className="text-xs bg-primary text-primary-foreground rounded px-3 py-1.5"
           >

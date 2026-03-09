@@ -67,6 +67,7 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
   const [confirmDel,   setConfirmDel]   = useState(false);
   const [toast,        setToast]        = useState('');
   const [iframeView,   setIframeView]   = useState<'preview' | 'existing'>('preview');
+  const [iframeExpanded, setIframeExpanded] = useState(false);
 
   useEffect(() => {
     if (!lead) return;
@@ -264,23 +265,21 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   <span className="text-xs text-muted-foreground truncate flex-1">
                     {iframeView === 'preview' ? lead.previewUrl : lead.website}
                   </span>
-                  {/* Toggle — only show if both exist */}
-                  {lead.previewUrl && lead.website && (
-                    <div className="flex border border-border/60 rounded overflow-hidden shrink-0">
-                      <button
-                        onClick={() => setIframeView('preview')}
-                        className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => setIframeView('existing')}
-                        className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        Current site
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Preview / Current site toggle */}
+                    {lead.previewUrl && lead.website && (
+                      <div className="flex border border-border/60 rounded overflow-hidden">
+                        <button onClick={() => setIframeView('preview')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Preview</button>
+                        <button onClick={() => setIframeView('existing')} className={`text-xs px-2 py-0.5 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Current site</button>
+                      </div>
+                    )}
+                    {/* Expand toggle */}
+                    <button
+                      onClick={() => setIframeExpanded(true)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 border border-border/60 rounded"
+                      title="Expand"
+                    >⛶</button>
+                  </div>
                 </div>
                 {iframeView === 'preview' && lead.previewUrl ? (
                   <iframe src={lead.previewUrl} className="w-full h-80 border-0" title={`${lead.name} preview`} />
@@ -291,6 +290,46 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                     No preview yet — click Generate Preview above
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Expanded iframe modal */}
+            {iframeExpanded && (lead.previewUrl || lead.website) && (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setIframeExpanded(false)}>
+                <div className="relative w-[90%] h-[90%] rounded-xl overflow-hidden border border-border shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                  {/* Chrome */}
+                  <div className="bg-card px-4 py-2 flex items-center gap-3 border-b border-border shrink-0">
+                    <div className="flex gap-1.5 shrink-0">
+                      <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                      <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                    </div>
+                    <span className="text-xs text-muted-foreground truncate flex-1">
+                      {iframeView === 'preview' ? lead.previewUrl : lead.website}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {lead.previewUrl && lead.website && (
+                        <div className="flex border border-border/60 rounded overflow-hidden">
+                          <button onClick={() => setIframeView('preview')} className={`text-xs px-2.5 py-1 transition-colors ${iframeView === 'preview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Preview</button>
+                          <button onClick={() => setIframeView('existing')} className={`text-xs px-2.5 py-1 transition-colors ${iframeView === 'existing' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Current site</button>
+                        </div>
+                      )}
+                      <a
+                        href={iframeView === 'preview' ? lead.previewUrl! : lead.website!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-border/60 rounded px-2 py-0.5"
+                      >↗ Open</a>
+                      <button onClick={() => setIframeExpanded(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-border/60 rounded px-2 py-0.5">✕ Close</button>
+                    </div>
+                  </div>
+                  {/* Full iframe */}
+                  {iframeView === 'preview' && lead.previewUrl ? (
+                    <iframe src={lead.previewUrl} className="w-full flex-1 border-0 bg-white" title={`${lead.name} preview`} />
+                  ) : (
+                    <iframe src={lead.website!} className="w-full flex-1 border-0 bg-white" title={`${lead.name} current site`} />
+                  )}
+                </div>
               </div>
             )}
           </div>

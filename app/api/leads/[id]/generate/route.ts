@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getLead, updateLead, addEvent } from '@/lib/db';
 import OpenAI from 'openai';
 import { writeFileSync, mkdirSync } from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -113,11 +114,26 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     };
 
     // 4. Write JSON to preview template repo
-    const dataDir = path.join(OUTPUT_DIR, 'data');
+    const dataDir  = path.join(OUTPUT_DIR, 'data');
+    const repoRoot = OUTPUT_DIR.replace(/[/\\]public$/, ''); // one level up from /public
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(dataDir, `${slug}.json`), JSON.stringify(data, null, 2));
 
-    // 5. Update DB
+    // 5. Git commit + push so Netlify deploys
+    try {
+      execSync(`git add public/data/${slug}.json`, { cwd: repoRoot, stdio: 'pipe' });
+      execSync(`git commit -m "preview: ${lead.name} (${lead.location})"`, { cwd: repoRoot, stdio: 'pipe' });
+      execSync(`git push`, { cwd: repoRoot, stdio: 'pipe' });
+    } catch (gitErr: any) {
+      const msg = gitErr.stderr?.toString() || gitErr.message;
+      // "nothing to commit" is fine — slug already exists
+      if (!msg.includes('nothing to commit')) {
+        console.error('Git error:', msg);
+        throw new Error(`Git push failed: ${msg}`);
+      }
+    }
+
+    // 6. Update DB
     const previewUrl = `${PREVIEW_BASE_URL}/${slug}`;
     updateLead(Number(id), { previewUrl });
     addEvent(Number(id), 'preview_generated', slug);

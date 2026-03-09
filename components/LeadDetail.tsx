@@ -203,15 +203,16 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                     <button
                       onClick={deleteLead}
                       disabled={deleting}
-                      className="text-xs px-2 py-0.5 rounded border bg-red-500/20 border-red-500/50 text-red-400 transition-colors"
+                      className="text-xs px-2 py-0.5 rounded border bg-red-500/20 border-red-500/50 text-red-400 transition-colors flex items-center gap-1"
                     >
-                      {deleting ? 'deleting...' : '⚠️ confirm'}
+                      <span>✕</span>
+                      {deleting ? 'deleting...' : 'confirm'}
                     </button>
                     <button
                       onClick={() => setConfirmDel(false)}
-                      className="text-xs px-2 py-0.5 rounded border border-transparent text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                      className="text-xs px-2 py-0.5 rounded border border-blue-400/40 text-blue-400 hover:bg-blue-400/10 transition-colors flex items-center gap-1"
                     >
-                      cancel
+                      <span>←</span> cancel
                     </button>
                   </>
                 ) : (

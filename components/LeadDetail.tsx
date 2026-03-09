@@ -253,6 +253,11 @@ export default function LeadDetail({ lead, onClose, onUpdate, onDelete }: Props)
                   <Badge variant="outline" className="bg-blue-500/15 text-blue-400 border-blue-500/30 cursor-pointer hover:bg-blue-500/25 text-xs">🔗 Preview</Badge>
                 </a>
               )}
+              {lead.website && (
+                <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer">
+                  <Badge variant="outline" className="bg-zinc-500/15 text-zinc-400 border-zinc-500/30 cursor-pointer hover:bg-zinc-500/25 text-xs">🌐 Current site</Badge>
+                </a>
+              )}
               {lead.emailStatus && <Badge variant="outline" className={`text-xs ${sendStatusColor(lead.emailStatus)}`}>📧 {lead.emailStatus}</Badge>}
               {lead.smsStatus   && <Badge variant="outline" className={`text-xs ${sendStatusColor(lead.smsStatus)}`}>💬 {lead.smsStatus}</Badge>}
             </div>

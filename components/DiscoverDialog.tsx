@@ -131,10 +131,10 @@ function LocationPicker({
   const [suggestions, setSuggestions] = useState<{ label: string; value: string }[]>([]);
   const [open,        setOpen]        = useState(false);
   const [loading,     setLoading]     = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wrapRef  = useRef<HTMLDivElement>(null);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef  = useRef<AbortController | null>(null);
+  const wrapRef   = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
@@ -143,26 +143,45 @@ function LocationPicker({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const search = useCallback((q: string) => {
+  const handleChange = (q: string) => {
+    setInput(q);
+
+    // Cancel any pending debounce + in-flight request immediately
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (q.length < 2) { setSuggestions([]); setOpen(false); return; }
+    if (abortRef.current) abortRef.current.abort();
+
+    if (q.length < 2) {
+      setSuggestions([]);
+      setOpen(false);
+      setLoading(false);
+      return;
+    }
+
+    // Show loading right away so the field locks before the debounce fires
+    setLoading(true);
+
     timerRef.current = setTimeout(async () => {
-      setLoading(true);
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
-        const res  = await fetch(`/api/cities?q=${encodeURIComponent(q)}`);
+        const res  = await fetch(`/api/cities?q=${encodeURIComponent(q)}`, { signal: controller.signal });
         const data = await res.json();
         setSuggestions(data);
         setOpen(data.length > 0);
-      } catch {}
-      setLoading(false);
-    }, 350);
-  }, []);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') setSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 420);
+  };
 
   const add = (value: string) => {
     if (!selected.includes(value)) onChange([...selected, value]);
     setInput('');
     setSuggestions([]);
     setOpen(false);
+    setLoading(false);
   };
 
   const remove = (value: string) => onChange(selected.filter(v => v !== value));
@@ -172,15 +191,22 @@ function LocationPicker({
       <div ref={wrapRef} className="relative">
         <input
           value={input}
-          onChange={e => { setInput(e.target.value); search(e.target.value); }}
+          onChange={e => handleChange(e.target.value)}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
-          placeholder="Search for a city…"
-          className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+          disabled={loading}
+          placeholder={loading ? 'Searching…' : 'Search for a city…'}
+          className={`w-full bg-background border border-border rounded px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-opacity ${loading ? 'opacity-60 cursor-wait' : ''}`}
         />
+        {/* Spinner */}
         {loading && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs animate-pulse">…</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg className="animate-spin h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          </span>
         )}
-        {open && suggestions.length > 0 && (
+        {open && !loading && suggestions.length > 0 && (
           <ul className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-xl overflow-hidden">
             {suggestions.map(s => (
               <li

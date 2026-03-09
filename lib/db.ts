@@ -236,7 +236,10 @@ export function recordSnapshot(): DailySnapshot {
 }
 
 export function getSnapshots(days = 30): DailySnapshot[] {
-  return getDb().prepare(
-    'SELECT * FROM daily_snapshots ORDER BY date ASC LIMIT ?'
-  ).all(days) as DailySnapshot[];
+  // Grab the most recent N days, then re-sort ascending for charting
+  return getDb().prepare(`
+    SELECT * FROM (
+      SELECT * FROM daily_snapshots ORDER BY date DESC LIMIT ?
+    ) ORDER BY date ASC
+  `).all(days) as DailySnapshot[];
 }

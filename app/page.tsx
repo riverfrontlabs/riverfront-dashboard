@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import LeadDetail from '@/components/LeadDetail';
 import StatsGraph from '@/components/StatsGraph';
 import type { Lead } from '@/lib/types';
+import DiscoverDialog from '@/components/DiscoverDialog';
 
 const PAGE_SIZE = 50;
 
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const [bulkRunning,  setBulkRunning]  = useState(false);
   const [showGraph,    setShowGraph]    = useState(false);
   const [confirm,      setConfirm]      = useState<{ action: 'generate' | 'delete'; count: number } | null>(null);
+  const [showDiscover, setShowDiscover] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -242,6 +244,9 @@ export default function Dashboard() {
             <span className="text-muted-foreground text-sm">/ Lead Dashboard</span>
           </div>
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowDiscover(true)} className="text-xs">
+              🔍 Discover
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setShowGraph(g => !g)} className={`text-xs ${showGraph ? 'bg-primary/20 border-primary/50' : ''}`}>
               📈 {showGraph ? 'Hide Graph' : 'Show Graph'}
             </Button>
@@ -461,6 +466,14 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Discover dialog */}
+      {showDiscover && (
+        <DiscoverDialog
+          onClose={() => setShowDiscover(false)}
+          onComplete={load}
+        />
+      )}
 
       {/* Bulk confirm dialog */}
       {confirm && (

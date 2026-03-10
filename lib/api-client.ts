@@ -1,8 +1,5 @@
-/**
- * API Client for Lead Pipeline API
- * All database operations now go through the backend API
- * JWT authentication handled via session cookies (server-side) or client-side storage
- */
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -151,6 +148,7 @@ export async function generatePreview(leadId: number) {
   const res = await fetch(`${API_URL}/api/generate/${leadId}`, {
     method: 'POST',
     headers,
+    body: '{}', // Send empty JSON body to satisfy Fastify
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   return await res.json();
@@ -163,6 +161,7 @@ export async function generateDraft(leadId: number) {
   const res = await fetch(`${API_URL}/api/draft/${leadId}`, {
     method: 'POST',
     headers,
+    body: '{}', // Send empty JSON body
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   return await res.json();
@@ -211,6 +210,7 @@ export async function recordSnapshot() {
   const res = await fetch(`${API_URL}/api/snapshots`, {
     method: 'POST',
     headers,
+    body: '{}', // Send empty JSON body
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const data = await res.json();

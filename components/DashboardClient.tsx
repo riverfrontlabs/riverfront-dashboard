@@ -3,6 +3,7 @@
 import { signOut } from 'next-auth/react';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import LeadDetail from '@/components/LeadDetail';
@@ -29,6 +30,12 @@ function scoreTier(s: number): { label: string; className: string } {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    window.location.href = '/login';
+  };
   const { theme, toggle: toggleTheme } = useTheme();
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -268,8 +275,8 @@ export default function Dashboard() {
             <Button size="sm" variant="outline" onClick={load} disabled={loading} className="text-xs">
               {loading ? '⏳ Loading...' : '🔄 Refresh'}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => signOut({ callbackUrl: "/login" })} className="text-xs">
-              Sign Out
+            <Button size="sm" variant="outline" onClick={handleSignOut} className="text-xs">
+              🚪 Sign Out
             </Button>
             <ThemeToggle />
           </div>

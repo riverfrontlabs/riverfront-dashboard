@@ -47,15 +47,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   callbacks: {
-    authorized({ request, auth }) {
-      const { pathname } = request.nextUrl
-      
-      // Allow login page always
-      if (pathname === '/login') return true
-      
-      // Require auth for all other pages
-      return !!auth
-    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
@@ -77,4 +68,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: 'jwt',
   },
+  trustHost: true,
 })
